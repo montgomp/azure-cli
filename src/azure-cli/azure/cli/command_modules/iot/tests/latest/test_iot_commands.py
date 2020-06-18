@@ -77,6 +77,22 @@ class IoTHubTest(ScenarioTest):
             self.check_pattern('connectionString[0]', conn_str_pattern)
         ])
 
+        # Test 'az iot hub show-connection-string --event-hub'
+        event_hub_conn_str_pattern = r'^Endpoint=sb://.*;SharedAccessKeyName=iothubowner;SharedAccessKey=.*;EntityPath={}$'.format(hub)
+        self.cmd('iot hub show-connection-string -n {0} --event-hub'.format(hub), checks=[
+            self.check_pattern('connectionString', event_hub_conn_str_pattern)
+        ])
+
+        self.cmd('iot hub show-connection-string -n {0} -g {1} --event-hub'.format(hub, rg), checks=[
+            self.check('length(@)', 1),
+            self.check_pattern('connectionString', event_hub_conn_str_pattern)
+        ])
+
+        self.cmd('iot hub show-connection-string -n {0} -g {1} --all --event-hub'.format(hub, rg), checks=[
+            self.check('length(connectionString[*])', 5),
+            self.check_pattern('connectionString[0]', event_hub_conn_str_pattern)
+        ])
+
         # Storage Connection String Pattern
         storage_cs_pattern = 'DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName='
         # Test 'az iot hub update'

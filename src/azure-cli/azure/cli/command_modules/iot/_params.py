@@ -268,6 +268,11 @@ def load_arguments(self, _):  # pylint: disable=too-many-statements
         c.argument('hub_name', options_list=['--hub-name', '--name', '-n'])
         c.argument('policy_name', help='Shared access policy to use.')
         c.argument('key_type', arg_type=get_enum_type(KeyType), options_list=['--key'], help='The key to use.')
+        c.argument(
+            'event_hub',
+            options_list=['--event-hub', '--eh'],
+            help="Formats connection string as Event Hub-compatible connection string"
+        )
 
     # Arguments for Message Enrichments
     with self.argument_context('iot hub message-enrichment') as c:

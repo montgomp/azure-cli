@@ -543,21 +543,21 @@ def iot_hub_delete(client, hub_name, resource_group_name=None):
 
 # pylint: disable=inconsistent-return-statements
 def iot_hub_show_connection_string(client, hub_name=None, resource_group_name=None, policy_name='iothubowner',
-                                   key_type=KeyType.primary.value, show_all=False):
+                                   key_type=KeyType.primary.value, show_all=False, event_hub=False):
     if hub_name is None:
         hubs = iot_hub_list(client, resource_group_name)
         if hubs is None:
             raise CLIError("No IoT Hub found.")
 
         def conn_str_getter(h):
-            return _get_hub_connection_string(client, h.name, h.additional_properties['resourcegroup'], policy_name, key_type, show_all)
+            return _get_hub_connection_string(client, h.name, h.additional_properties['resourcegroup'], policy_name, key_type, show_all, event_hub)
         return [{'name': h.name, 'connectionString': conn_str_getter(h)} for h in hubs]
     resource_group_name = _ensure_resource_group_name(client, resource_group_name, hub_name)
-    conn_str = _get_hub_connection_string(client, hub_name, resource_group_name, policy_name, key_type, show_all)
+    conn_str = _get_hub_connection_string(client, hub_name, resource_group_name, policy_name, key_type, show_all, event_hub)
     return {'connectionString': conn_str if show_all else conn_str[0]}
 
 
-def _get_hub_connection_string(client, hub_name, resource_group_name, policy_name, key_type, show_all):
+def _get_hub_connection_string(client, hub_name, resource_group_name, policy_name, key_type, show_all, event_hub):
     policies = []
     if show_all:
         policies.extend(iot_hub_policy_list(client, hub_name, resource_group_name))
@@ -566,6 +566,12 @@ def _get_hub_connection_string(client, hub_name, resource_group_name, policy_nam
     # Intermediate fix to support domains beyond azure-devices.netproperty
     hub = _get_iot_hub_by_name(client, hub_name)
     hostname = hub.properties.host_name
+    if event_hub:
+        template = "Endpoint={};SharedAccessKeyName={};SharedAccessKey={};EntityPath={}"
+        events = hub.properties.event_hub_endpoints['events']
+        endpoint = events.endpoint
+        return [template.format(endpoint, p.key_name, p.secondary_key if key_type == KeyType.secondary else p.primary_key, hub_name) for p in policies]
+
     conn_str_template = 'HostName={};SharedAccessKeyName={};SharedAccessKey={}'
     return [conn_str_template.format(hostname,
                                      p.key_name,
